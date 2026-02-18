@@ -1,25 +1,40 @@
+import { scan } from "react-scan";
 import { createRoot } from "react-dom/client";
-import "./style.css";
-import typescriptLogo from "/typescript.svg";
-import { Header, Counter } from "@repo/ui";
 
-const App = () => (
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="/vite.svg" className="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img
-        src={typescriptLogo}
-        className="logo vanilla"
-        alt="TypeScript logo"
-      />
-    </a>
-    <Header title="Web" />
-    <div className="card">
-      <Counter />
-    </div>
-  </div>
+scan({ enabled: true });
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import type { RecreationConfig } from "./types/recreation";
+import "@fontsource-variable/inter";
+import "./style.css";
+
+type RecreationModule = {
+  default: React.ComponentType;
+  config: RecreationConfig;
+};
+
+const recreationModules = import.meta.glob<RecreationModule>(
+  "./components/recreations/*.tsx"
 );
 
-createRoot(document.getElementById("app")!).render(<App />);
+const recreationRoutes = Object.entries(recreationModules).map(([path, loader]) => {
+  const slug = path.match(/([^/]+)\.tsx$/)?.[1] ?? "";
+  return {
+    path: `/${slug}`,
+    lazy: async () => {
+      const mod = await loader();
+      return { Component: mod.default };
+    },
+  };
+});
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    lazy: () => import("./pages/home"),
+  },
+  ...recreationRoutes,
+]);
+
+createRoot(document.getElementById("app")!).render(
+  <RouterProvider router={router} />
+);
