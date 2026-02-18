@@ -372,12 +372,16 @@ const MacDock = ({
                 style={{
                   borderRadius: BORDER_RADIUS,
                 }}
+                initial={{
+                  width: BASE_SIZE,
+                  height: BASE_SIZE,
+                }}
                 animate={{
                   width: sizes[i] ?? BASE_SIZE,
                   height: sizes[i] ?? BASE_SIZE,
                 }}
                 transition={{
-                  type: "tween", duration: 0.09,
+                  type: "tween", duration: 0.12,
                 }}
                 onMouseEnter={() => setHoveredIndex(i)}
                 onClick={(e) => {
@@ -483,18 +487,18 @@ const MacDockExample = () => {
         next.delete(index)
         return next
       })
-    }, 1000)
+    }, Math.random() * (3000 - 500) + 500)
   }
 
   return (
-    <>
+    <div className='h-[61.8vh] w-full flex items-center justify-center'>
       <MacDock
         items={DOCK_ITEMS}
         openingItemIndices={openingItemIndices}
         openedItemIndices={openedItemIndices}
         handleClick={handleItemClick}
       />
-    </>
+    </div>
   )
 }
 

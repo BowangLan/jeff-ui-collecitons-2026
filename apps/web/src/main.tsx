@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 scan({ enabled: true });
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import type { RecreationConfig } from "./types/recreation";
+import { RecreationPageWrapper } from "./components/recreation-page-wrapper";
 import "@fontsource-variable/inter";
 import "./style.css";
 
@@ -22,7 +23,15 @@ const recreationRoutes = Object.entries(recreationModules).map(([path, loader]) 
     path: `/${slug}`,
     lazy: async () => {
       const mod = await loader();
-      return { Component: mod.default };
+      const RecreationComponent = mod.default;
+      const config = mod.config;
+      return {
+        Component: () => (
+          <RecreationPageWrapper slug={slug} config={config}>
+            <RecreationComponent />
+          </RecreationPageWrapper>
+        ),
+      };
     },
   };
 });

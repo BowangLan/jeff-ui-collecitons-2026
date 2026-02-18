@@ -7,7 +7,7 @@ type RecreationMeta = {
 };
 
 const modules = import.meta.glob<{ config: RecreationConfig }>(
-  "../../components/recreations/*.tsx",
+  "../components/recreations/*.tsx",
   { eager: true }
 );
 
@@ -18,19 +18,40 @@ const recreations: RecreationMeta[] = Object.entries(modules).map(([path, mod]) 
 
 export function Component() {
   return (
-    <main className="min-h-screen p-8">
-      <h1 className="text-3xl font-bold mb-6">UI Collections</h1>
-      <ul className="flex flex-col gap-4">
-        {recreations.map(({ slug, config }) => (
-          <li key={slug}>
-            <Link to={`/${slug}`} className="block p-4 border rounded-lg hover:bg-gray-50">
-              <div className="font-semibold">{config.name}</div>
-              <div className="text-sm text-gray-500">{config.description}</div>
-              <div className="text-xs text-gray-400 mt-1">{config.tags.join(", ")}</div>
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <main className="min-h-screen bg-background">
+      <div className="mx-auto max-w-2xl px-6 py-16 sm:px-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          UI Collections
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          A curated set of UI recreations and experiments.
+        </p>
+        <ul className="mt-10 flex flex-col gap-3">
+          {recreations.map(({ slug, config }) => (
+            <li key={slug}>
+              <Link
+                to={`/${slug}`}
+                className="group flex cursor-pointer flex-col gap-1 rounded-lg border border-border bg-card/50 px-4 py-3.5 transition-colors duration-200 hover:border-border/80 hover:bg-card focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+              >
+                <div className="font-medium text-foreground">{config.name}</div>
+                <div className="text-sm leading-relaxed text-muted-foreground">
+                  {config.description}
+                </div>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {config.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-md bg-muted/80 px-2 py-0.5 text-xs text-muted-foreground"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </main>
   );
 }
