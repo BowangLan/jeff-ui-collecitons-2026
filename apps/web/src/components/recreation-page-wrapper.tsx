@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { setPageMetadata } from "../lib/metadata";
 import type { RecreationConfig } from "../types/recreation";
 
 type RecreationPageWrapperProps = {
@@ -12,6 +14,13 @@ export function RecreationPageWrapper({
   config,
   children,
 }: RecreationPageWrapperProps) {
+  useEffect(() => {
+    setPageMetadata({
+      title: `${config.name} | UI Collections`,
+      description: config.description,
+    });
+  }, [config.description, config.name]);
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Minimal top bar: back link + title */}

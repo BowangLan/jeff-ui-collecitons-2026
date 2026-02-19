@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import type { RecreationConfig } from "../types/recreation";
+import { setPageMetadata } from "../lib/metadata";
 
 type RecreationMeta = {
   slug: string;
@@ -17,6 +19,13 @@ const recreations: RecreationMeta[] = Object.entries(modules).map(([path, mod]) 
 }));
 
 export function Component() {
+  useEffect(() => {
+    setPageMetadata({
+      title: "UI Collections",
+      description: "A curated set of UI recreations and interface experiments.",
+    });
+  }, []);
+
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-2xl px-6 py-16 sm:px-8">
