@@ -2,11 +2,13 @@ import React, { useRef, useState, useCallback } from 'react'
 import type { RecreationConfig } from '../../types/recreation'
 import { motion, AnimatePresence, cubicBezier } from 'motion/react'
 
-const PROXIMITY_RADIUS = 160
+const PROXIMITY_RADIUS = 180
 const BASE_SIZE = 42
 const MAX_SIZE = BASE_SIZE * 1.3
 const PADDING = 10
 const BORDER_RADIUS = 8
+const LABEL_HOVER_DURATION = 0.05
+const ICON_HOVER_DURATION = 0.05
 
 export const config = {
   name: 'MacDock',
@@ -83,7 +85,7 @@ const MacDock = ({
         {/* Dock */}
         <div
           ref={containerRef}
-          className="flex items-end bg-accent"
+          className="flex items-end glass"
           style={{
             padding: PADDING,
             gap: PADDING,
@@ -109,7 +111,7 @@ const MacDock = ({
                   height: sizes[i] ?? BASE_SIZE,
                 }}
                 transition={{
-                  type: "tween", duration: 0.12,
+                  type: "tween", duration: ICON_HOVER_DURATION,
                 }}
                 onMouseEnter={() => setHoveredIndex(i)}
                 onClick={(e) => {
@@ -130,11 +132,11 @@ const MacDock = ({
                       initial={{ opacity: 0, y: 5, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                      transition={{ duration: 0.09 }}
-                      className="pointer-events-none absolute bg-accent backdrop-blur-sm rounded-md px-2.5 py-1.5 text-xs font-normal w-fit whitespace-nowrap"
+                      transition={{ duration: LABEL_HOVER_DURATION }}
+                      className="pointer-events-none absolute glass rounded-md px-2.5 py-1.5 text-xs font-normal w-fit whitespace-nowrap"
                       style={{
                         bottom: '100%',
-                        marginBottom: 8,
+                        marginBottom: PADDING * 1.5,
                         borderRadius: BORDER_RADIUS,
                       }}
                     >
@@ -217,7 +219,19 @@ const MacDockExample = () => {
   }
 
   return (
-    <div className='h-[61.8vh] w-full flex items-center justify-center'>
+    <div className="relative my-auto translate-y-[-12.5%] h-[61.8vh] w-full flex items-center justify-center rounded-xl overflow-hidden">
+      <div
+        className="absolute inset-0 w-full h-full overflow-hidden"
+        aria-hidden="true"
+      >
+        <img
+          src="/images/macos-big-sur.jpg"
+          alt=""
+          className="w-full h-full object-cover pointer-events-none select-none"
+          draggable={false}
+        />
+        <div className="absolute inset-0 bg-black/30" />
+      </div>
       <MacDock
         items={DOCK_ITEMS}
         openingItemIndices={openingItemIndices}

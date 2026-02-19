@@ -31,7 +31,7 @@ export function RecreationPageWrapper({
       </header>
 
       {/* Recreation content: flex-1 so it fills remaining viewport */}
-      <main className="flex flex-1 flex-col">{children}</main>
+      <main className="flex flex-1 flex-col w-full mx-auto max-w-6xl">{children}</main>
     </div>
   );
 }

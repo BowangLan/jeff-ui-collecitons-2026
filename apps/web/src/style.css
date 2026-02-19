@@ -122,7 +122,41 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+
+.glass {
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--background) 8%, transparent);
+  border: 1px solid transparent;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .15), 0 16px 32px rgba(0, 0, 0, .12);
+  /* backdrop-filter: url(#frosted);
+  -webkit-backdrop-filter: url(#frosted); */
+  outline: 0;
+  @apply backdrop-blur-lg;
+}
+
+.glass::before,
+.glass::after {
+  content: "";
+  position: absolute;
+  background: var(--background);
+}
+
+.glass::after {
+  transform: rotate(90deg)
+}
+
+html.dark {
+  .glass {
+    background: color-mix(in srgb, var(--background) 36%, transparent);
+    border: 1px solid rgba(28, 28, 30, .32);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .10), 0 16px 32px rgba(0, 0, 0, .08);
+    outline: 0;
+  }
+
 }
