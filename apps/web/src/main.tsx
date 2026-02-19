@@ -1,8 +1,16 @@
 import { scan } from "react-scan";
+import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
+import {
+  createRoute,
+  createRootRoute,
+  createRouter,
+  lazyRouteComponent,
+  Outlet,
+  RouterProvider,
+} from "@tanstack/react-router";
 
 scan({ enabled: true });
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import type { RecreationConfig } from "./types/recreation";
 import { RecreationPageWrapper } from "./components/recreation-page-wrapper";
 import "@fontsource-variable/inter";
@@ -17,32 +25,56 @@ const recreationModules = import.meta.glob<RecreationModule>(
   "./components/recreations/*.tsx"
 );
 
-const recreationRoutes = Object.entries(recreationModules).map(([path, loader]) => {
-  const slug = path.match(/([^/]+)\.tsx$/)?.[1] ?? "";
-  return {
-    path: `/${slug}`,
-    lazy: async () => {
-      const mod = await loader();
-      const RecreationComponent = mod.default;
-      const config = mod.config;
-      return {
-        Component: () => (
-          <RecreationPageWrapper slug={slug} config={config}>
-            <RecreationComponent />
-          </RecreationPageWrapper>
-        ),
-      };
-    },
-  };
+const recreationConfigModules = import.meta.glob<{ config: RecreationConfig }>(
+  "./components/recreations/*.tsx",
+  { eager: true }
+);
+
+const rootRoute = createRootRoute({
+  component: Outlet,
 });
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    lazy: () => import("./pages/home"),
-  },
-  ...recreationRoutes,
-]);
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  component: lazyRouteComponent(() => import("./pages/home"), "Component"),
+});
+
+const recreationRoutes = Object.entries(recreationModules).map(([path, loader]) => {
+  const slug = path.match(/([^/]+)\.tsx$/)?.[1] ?? "";
+  const config = recreationConfigModules[path]?.config;
+
+  if (!config) {
+    throw new Error(`Missing config export for recreation module: ${path}`);
+  }
+
+  const RecreationComponent = lazy(async () => {
+    const mod = await loader();
+    return { default: mod.default };
+  });
+
+  return createRoute({
+    getParentRoute: () => rootRoute,
+    path: `/${slug}`,
+    component: () => (
+      <RecreationPageWrapper slug={slug} config={config}>
+        <Suspense fallback={null}>
+          <RecreationComponent />
+        </Suspense>
+      </RecreationPageWrapper>
+    ),
+  });
+});
+
+const routeTree = rootRoute.addChildren([homeRoute, ...recreationRoutes]);
+
+const router = createRouter({ routeTree });
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
 
 createRoot(document.getElementById("app")!).render(
   <RouterProvider router={router} />
