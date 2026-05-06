@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { setPageMetadata } from "../lib/metadata";
-import type { RecreationConfig } from "../types/recreation";
+import type { CollectionConfig } from "../types/collection";
 
 type RecreationPageWrapperProps = {
   slug: string;
-  config: RecreationConfig;
+  config: CollectionConfig;
   children: React.ReactNode;
 };
 

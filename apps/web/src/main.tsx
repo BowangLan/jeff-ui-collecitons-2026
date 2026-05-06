@@ -11,19 +11,24 @@ import {
 } from "@tanstack/react-router";
 
 scan({ enabled: true });
-import type { RecreationConfig } from "./types/recreation";
+import type { CollectionConfig } from "./types/collection";
 import { RecreationPageWrapper } from "./components/recreation-page-wrapper";
 import "@fontsource-variable/inter";
 import "./style.css";
 
 type RecreationModule = {
   default: React.ComponentType;
-  config: RecreationConfig;
+  config: CollectionConfig;
 };
 
 type ExperimentModule = {
   default: React.ComponentType;
-  config: RecreationConfig;
+  config: CollectionConfig;
+};
+
+type DesignSystemModule = {
+  default: React.ComponentType;
+  config: CollectionConfig;
 };
 
 const recreationModules = import.meta.glob<RecreationModule>(
@@ -34,13 +39,22 @@ const experimentModules = import.meta.glob<ExperimentModule>(
   "./components/experiments/*.tsx"
 );
 
-const recreationConfigModules = import.meta.glob<{ config: RecreationConfig }>(
+const designSystemModules = import.meta.glob<DesignSystemModule>(
+  "./components/design-systems/*.tsx"
+);
+
+const recreationConfigModules = import.meta.glob<{ config: CollectionConfig }>(
   "./components/recreations/*.tsx",
   { eager: true }
 );
 
-const experimentConfigModules = import.meta.glob<{ config: RecreationConfig }>(
+const experimentConfigModules = import.meta.glob<{ config: CollectionConfig }>(
   "./components/experiments/*.tsx",
+  { eager: true }
+);
+
+const designSystemConfigModules = import.meta.glob<{ config: CollectionConfig }>(
+  "./components/design-systems/*.tsx",
   { eager: true }
 );
 
@@ -106,10 +120,37 @@ const experimentRoutes = Object.entries(experimentModules).map(([path, loader]) 
   });
 });
 
+const designSystemRoutes = Object.entries(designSystemModules).map(([path, loader]) => {
+  const slug = path.match(/([^/]+)\.tsx$/)?.[1] ?? "";
+  const config = designSystemConfigModules[path]?.config;
+
+  if (!config) {
+    throw new Error(`Missing config export for design system module: ${path}`);
+  }
+
+  const DesignSystemComponent = lazy(async () => {
+    const mod = await loader();
+    return { default: mod.default };
+  });
+
+  return createRoute({
+    getParentRoute: () => rootRoute,
+    path: `/design-systems/${slug}`,
+    component: () => (
+      <RecreationPageWrapper slug={slug} config={config}>
+        <Suspense fallback={null}>
+          <DesignSystemComponent />
+        </Suspense>
+      </RecreationPageWrapper>
+    ),
+  });
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   ...recreationRoutes,
   ...experimentRoutes,
+  ...designSystemRoutes,
 ]);
 
 const router = createRouter({ routeTree });
