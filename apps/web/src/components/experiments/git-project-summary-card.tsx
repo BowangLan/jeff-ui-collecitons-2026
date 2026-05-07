@@ -377,11 +377,8 @@ function getProjectPulse({
   return "Waiting on the last signal";
 }
 
-function GitProjectSummaryCard(project: GitProjectSummaryCardProps) {
+function getCiAggregation(project: GitProjectSummaryCardProps) {
   const ciStatuses = project.ci.flatMap((ci) => ci.statuses);
-  const passedCiStatuses = ciStatuses.filter(
-    (status) => status.variant === "success",
-  );
   const ciStatusCount = ciStatuses.length;
   const ciStatusCounts = ciStatuses.reduce<Record<CiStatusVariant, number>>(
     (counts, status) => {
@@ -415,6 +412,27 @@ function GitProjectSummaryCard(project: GitProjectSummaryCardProps) {
   const passedCiCount = project.ci.filter((ci) =>
     ci.statuses.every((status) => status.variant === "success"),
   ).length;
+
+  return {
+    ciStatuses,
+    ciStatusCount,
+    ciStatusCounts,
+    ciStatusGroups,
+    passedCiCount,
+  };
+}
+
+function GitProjectSummaryCard(project: GitProjectSummaryCardProps) {
+  const {
+    ciStatuses,
+    ciStatusCount,
+    ciStatusCounts,
+    ciStatusGroups,
+    passedCiCount,
+  } = getCiAggregation(project);
+  const passedCiStatuses = ciStatuses.filter(
+    (status) => status.variant === "success",
+  );
   const prStateTone = getPrStateTone(project.prState);
   const projectPulse = getProjectPulse({
     hasFailedCi: ciStatusCounts.failed > 0,
@@ -543,9 +561,8 @@ function GitProjectSummaryCard(project: GitProjectSummaryCardProps) {
             {ciStatusGroups.map((group) => (
               <div
                 key={group.variant}
-                className={`h-full motion-safe:transition-opacity group-hover/card:opacity-90 ${ciStatusVariants[group.variant].progress} ${
-                  group.variant === "running" ? "motion-safe:animate-pulse" : ""
-                }`}
+                className={`h-full motion-safe:transition-opacity group-hover/card:opacity-90 ${ciStatusVariants[group.variant].progress} ${group.variant === "running" ? "motion-safe:animate-pulse" : ""
+                  }`}
                 style={{
                   width: `${(group.count / ciStatusCount) * 100}%`,
                 }}
@@ -557,11 +574,9 @@ function GitProjectSummaryCard(project: GitProjectSummaryCardProps) {
               <span key={group.variant} className="inline-flex items-center gap-1">
                 <span
                   aria-hidden
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    ciStatusVariants[group.variant].progress
-                  } ${
-                    group.variant === "running" ? "motion-safe:animate-pulse" : ""
-                  }`}
+                  className={`h-1.5 w-1.5 rounded-full ${ciStatusVariants[group.variant].progress
+                    } ${group.variant === "running" ? "motion-safe:animate-pulse" : ""
+                    }`}
                 />
                 <span className="tabular-nums">{group.count}</span>
                 <span>{group.label}</span>
@@ -614,12 +629,120 @@ function GitProjectSummaryCard(project: GitProjectSummaryCardProps) {
   );
 }
 
+function GitProjectSummaryCardMinified(project: GitProjectSummaryCardProps) {
+  const { ciStatuses, ciStatusCount, ciStatusGroups, passedCiCount } =
+    getCiAggregation(project);
+  const passedCiStatuses = ciStatuses.filter(
+    (status) => status.variant === "success",
+  );
+  const prStateTone = getPrStateTone(project.prState);
+
+  return (
+    <section
+      className="@container/card-mini group/card-mini w-full rounded-xl border border-neutral-200 bg-white p-3 shadow-sm motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200 hover:border-neutral-300 hover:shadow-neutral-200/50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 dark:hover:shadow-black/10"
+      aria-label={`${project.repoName} repository summary (compact)`}
+    >
+      <div className="grid min-w-0 gap-3 @2xl/card-mini:grid-cols-[minmax(0,1fr)_auto_minmax(9rem,10rem)] @2xl/card-mini:items-center">
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className="truncate text-sm font-medium tracking-tight text-neutral-950 dark:text-neutral-50">
+              {project.repoName}
+            </h2>
+            <span
+              className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase leading-none tracking-wide ${prStateTone.pill}`}
+            >
+              <span
+                aria-hidden
+                className={`h-1 w-1 rounded-full ${prStateTone.dot}`}
+              />
+              {project.prState}
+            </span>
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+            <GitBranch
+              aria-hidden
+              className="h-3 w-3 shrink-0 text-neutral-400"
+              strokeWidth={1.8}
+            />
+            <span className="min-w-0 max-w-full truncate font-mono text-[11px] text-neutral-600 dark:text-neutral-300 @2xl/card-mini:max-w-[16rem]">
+              {project.branch}
+            </span>
+            <div className="flex-1"></div>
+            <a
+              href={project.prUrl}
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-sm text-neutral-700 underline-offset-2 hover:text-neutral-950 hover:underline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-950 dark:text-neutral-300 dark:hover:text-neutral-50 dark:focus-visible:outline-neutral-50"
+            >
+              #{project.prNumber}
+              {/* <ExternalLink
+                aria-hidden
+                className="h-2.5 w-2.5 opacity-70"
+                strokeWidth={1.8}
+              /> */}
+            </a>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 overflow-hidden text-left text-base tabular-nums @2xl/card-mini:w-46">
+          <span className="font-medium text-emerald-600">+{project.additions}</span>
+          <span className="font-medium text-red-600">- {project.deletions}</span>
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <div
+            className="flex h-1.5 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800"
+            role="progressbar"
+            aria-label="CI statuses (compact)"
+            aria-valuemin={0}
+            aria-valuemax={ciStatusCount}
+            aria-valuenow={passedCiStatuses.length}
+          >
+            {ciStatusGroups.map((group) => (
+              <div
+                key={group.variant}
+                className={`h-full ${ciStatusVariants[group.variant].progress} ${group.variant === "running"
+                  ? "motion-safe:animate-pulse"
+                  : ""
+                  }`}
+                style={{
+                  width: `${(group.count / ciStatusCount) * 100}%`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Page() {
   return (
-    <article className="grid min-h-[calc(100vh-56px)] w-full grid-cols-1 place-items-center gap-4 bg-neutral-50 px-4 py-10 dark:bg-neutral-950 lg:grid-cols-3">
-      {projects.map((project) => (
-        <GitProjectSummaryCard key={project.repoName} {...project} />
-      ))}
-    </article>
+    <div className="min-h-[calc(100vh-56px)] w-full bg-neutral-50 px-4 py-8 dark:bg-neutral-950 sm:py-10">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 sm:gap-10">
+        <section className="space-y-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            Full card
+          </h2>
+          <article className="grid w-full grid-cols-1 gap-4 lg:grid-cols-3">
+            {projects.map((project) => (
+              <GitProjectSummaryCard key={project.repoName} {...project} />
+            ))}
+          </article>
+        </section>
+        <section className="space-y-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            Minified
+          </h2>
+          <article className="grid w-full grid-cols-1 gap-4 lg:grid-cols-3">
+            {projects.map((project) => (
+              <GitProjectSummaryCardMinified
+                key={`mini-${project.repoName}`}
+                {...project}
+              />
+            ))}
+          </article>
+        </section>
+      </div>
+    </div>
   );
 }
