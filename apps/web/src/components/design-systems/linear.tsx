@@ -127,7 +127,7 @@ const issues: Issue[] = [
     id: "ENG-1064",
     title: "[Frontend/Backend/Database] Add Trips Management to Crew Timeline",
     state: "In Review",
-    team: "GeoSpatios",
+    team: "Northstar",
     labels: [
       { name: "Feature", color: "#8f5cf7" },
       { name: "Operations", color: "#4da8ff" },
@@ -142,7 +142,7 @@ const issues: Issue[] = [
     id: "GEO-52",
     title: "[Frontend] Crew Ops Scheduler UX Refactor",
     state: "In Review",
-    team: "GeoSpatios",
+    team: "Northstar",
     labels: [{ name: "#167", color: "#2ec27e" }],
     project: "Spirit Airline Demo V2",
     estimate: "5",
@@ -154,7 +154,7 @@ const issues: Issue[] = [
     id: "ENG-1016",
     title: "[Frontend/Backend/Database] Introduce AircraftType Table & Add Support",
     state: "In Review",
-    team: "GeoSpatios",
+    team: "Northstar",
     labels: [{ name: "#1", color: "#f5c451" }],
     project: "Spirit Airline",
     estimate: "3",
@@ -166,7 +166,7 @@ const issues: Issue[] = [
     id: "GEO-53",
     title: "[Frontend/Backend/Database] Crew Ops PRD",
     state: "In Progress",
-    team: "GeoSpatios",
+    team: "Northstar",
     labels: [{ name: "PRD", color: "#5e6ad2" }],
     project: "Spirit Airline Demo V2",
     estimate: "1",
@@ -178,7 +178,7 @@ const issues: Issue[] = [
     id: "ENG-1079",
     title: "[Frontend/Backend/Database] Aircraft Type Crew Composition Verification",
     state: "Todo",
-    team: "GeoSpatios",
+    team: "Northstar",
     labels: [
       { name: "Backend", color: "#f5c451" },
       { name: "Frontend", color: "#23c1e6" },
@@ -193,7 +193,7 @@ const issues: Issue[] = [
     id: "GEO-48",
     title: "[Frontend] Add Multi-Select Support to Crew Timeline / Gantt View",
     state: "Todo",
-    team: "GeoSpatios",
+    team: "Northstar",
     labels: [],
     project: "Spirit Airline Demo V2",
     estimate: "6",
@@ -205,7 +205,7 @@ const issues: Issue[] = [
     id: "ENG-1025",
     title: "[Frontend/Backend] Export button in CrewList is non-functional",
     state: "Todo",
-    team: "GeoSpatios",
+    team: "Northstar",
     labels: [{ name: "Bug", color: "#ff6b6b" }],
     project: "Spirit Airline Demo",
     estimate: "6",
@@ -418,7 +418,7 @@ function IssueBoardRecreation() {
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#111318]">
                   <div className="h-5 w-5 rounded-full border border-white/15" />
                 </div>
-                <div className="text-[15px] font-medium text-[#f3f4f6]">GeoSpatios</div>
+                <div className="text-[15px] font-medium text-[#f3f4f6]">Northstar</div>
               </div>
               <div className="flex items-center gap-3 text-[#8f95a3]">
                 <Search className="h-4 w-4" />
