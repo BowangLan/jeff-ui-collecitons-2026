@@ -28,11 +28,46 @@ test("a new press from the same pointer replaces an unfinished drag", () => {
   store.movePointer(scope, pointer, 150, false);
 
   store.beginDrag(scope, pointer, 300);
+  expect(usePriceHistory.getState().chart?.selection).toEqual({
+    anchor: 100,
+    extent: 150,
+  });
   store.finishDrag(scope, pointer, 280, false);
 
   expect(usePriceHistory.getState().chart?.selection).toEqual({
     anchor: 300,
     extent: 280,
+  });
+});
+
+test("an interruption commits the visible preview and ignores a late release", () => {
+  store.openChart(scope.id);
+  store.beginDrag(scope, pointer, 100);
+  store.finishDrag(scope, pointer, 500, false);
+
+  store.beginDrag(scope, pointer, 350);
+  store.movePointer(scope, pointer, 250, false);
+  store.interruptDrag(scope, pointer);
+  store.finishDrag(scope, pointer, 200, false);
+
+  expect(usePriceHistory.getState().chart).toMatchObject({
+    selection: { anchor: 350, extent: 250 },
+    cursorIndex: 250,
+    drag: null,
+  });
+});
+
+test("an interruption before a preview leaves the committed range in place", () => {
+  store.openChart(scope.id);
+  store.beginDrag(scope, pointer, 100);
+  store.finishDrag(scope, pointer, 500, false);
+
+  store.beginDrag(scope, pointer, 750);
+  store.interruptDrag(scope, pointer);
+
+  expect(usePriceHistory.getState().chart).toMatchObject({
+    selection: { anchor: 100, extent: 500 },
+    drag: null,
   });
 });
 

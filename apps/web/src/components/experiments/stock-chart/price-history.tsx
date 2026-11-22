@@ -198,10 +198,7 @@ function HistoryPlot({
             aria-valuenow={activeIndex + 1}
             aria-describedby={hintId}
             aria-valuetext={`${selectedDate}, ${formatPrice(point.close)}${selectionLabel ? `, selected range ${selectionLabel}` : ""}`}
-            onPointerMove={controls.trackPointer}
             onPointerDown={controls.startDrag}
-            onPointerCancel={controls.cancelDrag}
-            onLostPointerCapture={controls.loseCapture}
             onPointerLeave={controls.leavePlot}
             onKeyDown={controls.trackKeyboard}
           >

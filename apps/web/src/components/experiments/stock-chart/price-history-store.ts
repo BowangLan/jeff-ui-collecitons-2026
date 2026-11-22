@@ -40,7 +40,7 @@ type PriceHistoryState = {
     crossedSession: boolean,
     outsideHighlight?: boolean,
   ) => void;
-  cancelDrag: (scope: HistoryScope, pointerId: number) => void;
+  interruptDrag: (scope: HistoryScope, pointerId: number) => void;
   moveCursor: (
     scope: HistoryScope,
     index: number | null,
@@ -94,6 +94,7 @@ export const usePriceHistory = create<PriceHistoryState>((set) => {
         if (chart.drag && chart.drag.pointerId !== pointerId) return;
         return {
           cursorIndex: anchor,
+          selection: chart.drag?.preview ?? chart.selection,
           drag: { pointerId, anchor, preview: null },
         };
       }),
@@ -127,12 +128,16 @@ export const usePriceHistory = create<PriceHistoryState>((set) => {
             : null);
         return { cursorIndex: extent, selection, drag: null };
       }),
-    cancelDrag: (scope, pointerId) =>
-      updatePlot(scope, (chart) =>
-        chart.drag?.pointerId === pointerId
-          ? { cursorIndex: null, drag: null }
-          : undefined,
-      ),
+    interruptDrag: (scope, pointerId) =>
+      updatePlot(scope, (chart) => {
+        const { drag } = chart;
+        if (drag?.pointerId !== pointerId) return;
+        return {
+          cursorIndex: drag.preview?.extent ?? null,
+          selection: drag.preview ?? chart.selection,
+          drag: null,
+        };
+      }),
     moveCursor: (scope, index, selectionAnchor) =>
       updatePlot(scope, (chart) => {
         if (chart.drag) return;

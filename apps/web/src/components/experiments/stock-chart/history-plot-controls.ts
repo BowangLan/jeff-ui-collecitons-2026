@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { usePriceHistory } from "./price-history-store";
 import type { HistoryScope } from "./price-history-store";
@@ -35,16 +35,20 @@ function crossedSession(
 export function useHistoryPlotControls(scope: HistoryScope, last: number) {
   const plotRef = useRef<HTMLDivElement>(null);
   const frame = useRef<number | null>(null);
+  const releaseFrame = useRef<number | null>(null);
   const pending = useRef<PointerSample | null>(null);
   const { id, preset } = scope;
 
-  const cancelFrame = useCallback(() => {
+  const clearPointerFrames = useCallback(() => {
     if (frame.current !== null) cancelAnimationFrame(frame.current);
+    if (releaseFrame.current !== null)
+      cancelAnimationFrame(releaseFrame.current);
     frame.current = null;
+    releaseFrame.current = null;
     pending.current = null;
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const plot = plotRef.current;
     if (!plot) return;
     const isPlotEvent = (event: Event) => event.composedPath().includes(plot);
@@ -69,6 +73,56 @@ export function useHistoryPlotControls(scope: HistoryScope, last: number) {
         clearSelection({ id, preset });
       }
     }
+
+    const trackPointer = (event: PointerEvent) => {
+      if (!event.isPrimary) return;
+      const chart = usePriceHistory.getState().chart;
+      if (chart?.id !== id || chart.preset !== preset) return;
+      const { drag } = chart;
+
+      if (
+        drag
+          ? drag.pointerId !== event.pointerId
+          : event.pointerType === "touch" || !isPlotEvent(event)
+      )
+        return;
+      if (drag && event.buttons === 0) {
+        // A real pointerup can still arrive after this move and give the exact extent.
+        releaseFrame.current ??= requestAnimationFrame(() => {
+          releaseFrame.current = null;
+          commitPointerRelease(event);
+        });
+        return;
+      }
+      if (releaseFrame.current !== null) {
+        cancelAnimationFrame(releaseFrame.current);
+        releaseFrame.current = null;
+      }
+      const previous = pending.current;
+      pending.current = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        minX: Math.min(event.clientX, previous?.minX ?? event.clientX),
+        maxX: Math.max(event.clientX, previous?.maxX ?? event.clientX),
+      };
+      if (frame.current !== null) return;
+
+      frame.current = requestAnimationFrame(() => {
+        const sample = pending.current;
+        frame.current = null;
+        pending.current = null;
+        if (!sample) return;
+        const bounds = plot.getBoundingClientRect();
+        usePriceHistory
+          .getState()
+          .movePointer(
+            { id, preset },
+            sample.pointerId,
+            indexAt(sample.clientX, bounds, last),
+            !!drag && crossedSession(sample, bounds, drag.anchor, last),
+          );
+      });
+    };
 
     const commitPointerRelease = (event: PointerEvent) => {
       const { chart, finishDrag } = usePriceHistory.getState();
@@ -100,7 +154,7 @@ export function useHistoryPlotControls(scope: HistoryScope, last: number) {
           event.clientX > highlight.right ||
           event.clientY < highlight.top ||
           event.clientY > highlight.bottom);
-      cancelFrame();
+      clearPointerFrames();
       finishDrag(
         { id, preset },
         event.pointerId,
@@ -110,22 +164,35 @@ export function useHistoryPlotControls(scope: HistoryScope, last: number) {
       );
     };
 
+    function interruptPointer(pointerId?: number) {
+      const { chart, interruptDrag } = usePriceHistory.getState();
+      if (chart?.id !== id || chart.preset !== preset || !chart.drag) return;
+      if (pointerId !== undefined && chart.drag.pointerId !== pointerId) return;
+      clearPointerFrames();
+      interruptDrag({ id, preset }, chart.drag.pointerId);
+    }
+
+    const onPointerCancel = (event: PointerEvent) =>
+      interruptPointer(event.pointerId);
+    const onWindowBlur = () => interruptPointer();
+
+    // Capture controls event targeting. Document listeners own the gesture lifetime.
     document.addEventListener("pointerdown", recordPointerOrigin, true);
+    document.addEventListener("pointermove", trackPointer, true);
     document.addEventListener("pointerup", commitPointerRelease, true);
+    document.addEventListener("pointercancel", onPointerCancel, true);
     document.addEventListener("click", clearOnOutsideClick);
+    window.addEventListener("blur", onWindowBlur);
     return () => {
       document.removeEventListener("pointerdown", recordPointerOrigin, true);
+      document.removeEventListener("pointermove", trackPointer, true);
       document.removeEventListener("pointerup", commitPointerRelease, true);
+      document.removeEventListener("pointercancel", onPointerCancel, true);
       document.removeEventListener("click", clearOnOutsideClick);
+      window.removeEventListener("blur", onWindowBlur);
+      clearPointerFrames();
     };
-  }, [id, preset, last, cancelFrame]);
-
-  useLayoutEffect(
-    () => () => {
-      if (frame.current !== null) cancelAnimationFrame(frame.current);
-    },
-    [],
-  );
+  }, [id, preset, last, clearPointerFrames]);
 
   function getChart() {
     const chart = usePriceHistory.getState().chart;
@@ -138,7 +205,7 @@ export function useHistoryPlotControls(scope: HistoryScope, last: number) {
     if (!event.isPrimary || event.button !== 0) return;
     const drag = getChart()?.drag;
     if (drag && drag.pointerId !== event.pointerId) return;
-    cancelFrame();
+    clearPointerFrames();
     const anchor = indexAt(
       event.clientX,
       event.currentTarget.getBoundingClientRect(),
@@ -148,57 +215,9 @@ export function useHistoryPlotControls(scope: HistoryScope, last: number) {
     usePriceHistory.getState().beginDrag(scope, event.pointerId, anchor);
   }
 
-  function trackPointer(event: ReactPointerEvent<HTMLDivElement>) {
-    const drag = getChart()?.drag;
-    if (
-      !event.isPrimary ||
-      (drag
-        ? drag.pointerId !== event.pointerId
-        : event.pointerType === "touch")
-    )
-      return;
-
-    const element = event.currentTarget;
-    const previous = pending.current;
-    pending.current = {
-      pointerId: event.pointerId,
-      clientX: event.clientX,
-      minX: Math.min(event.clientX, previous?.minX ?? event.clientX),
-      maxX: Math.max(event.clientX, previous?.maxX ?? event.clientX),
-    };
-    if (frame.current !== null) return;
-
-    frame.current = requestAnimationFrame(() => {
-      const sample = pending.current;
-      frame.current = null;
-      pending.current = null;
-      if (!sample) return;
-      const bounds = element.getBoundingClientRect();
-      usePriceHistory
-        .getState()
-        .movePointer(
-          scope,
-          sample.pointerId,
-          indexAt(sample.clientX, bounds, last),
-          !!drag && crossedSession(sample, bounds, drag.anchor, last),
-        );
-    });
-  }
-
-  function cancelDrag(event: ReactPointerEvent<HTMLDivElement>) {
-    if (getChart()?.drag?.pointerId !== event.pointerId) return;
-    cancelFrame();
-    usePriceHistory.getState().cancelDrag(scope, event.pointerId);
-  }
-
-  function loseCapture(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!event.currentTarget.hasPointerCapture(event.pointerId))
-      cancelDrag(event);
-  }
-
   function clearSelection() {
     const drag = getChart()?.drag;
-    cancelFrame();
+    clearPointerFrames();
     usePriceHistory.getState().clearSelection(scope);
     if (drag && plotRef.current?.hasPointerCapture(drag.pointerId)) {
       plotRef.current.releasePointerCapture(drag.pointerId);
@@ -248,16 +267,13 @@ export function useHistoryPlotControls(scope: HistoryScope, last: number) {
 
   function leavePlot() {
     if (getChart()?.drag) return;
-    cancelFrame();
+    clearPointerFrames();
     usePriceHistory.getState().moveCursor(scope, null);
   }
 
   return {
     plotRef,
     startDrag,
-    trackPointer,
-    cancelDrag,
-    loseCapture,
     clearSelection,
     leavePlot,
     trackKeyboard,
